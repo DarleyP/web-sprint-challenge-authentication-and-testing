@@ -1,8 +1,10 @@
 const router = require('express').Router();
+const { checkUsernameExists} = require('../middleware/auth-middelware')
 const { SECRET } = require('./secrets/index')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const User = require('../auth/auth-model')
+
 
 
 router.post('/register', async (req, res, next) => {
@@ -32,22 +34,28 @@ router.post('/register', async (req, res, next) => {
     4- On FAILED registration due to the `username` being taken,
       the response body should include a string exactly as follows: "username taken".
   */
-  const { username, password } = req.body
+      const { username, password } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json("username and password required");
+      }
 
 
-  const hash = bcrypt.hashSync(password, 8)
+const hash = bcrypt.hashSync(password, 8);
 
-  User.add({ username, password: hash })
-    .then((newUser) => {
-      res.status(201).json(newUser)
-    })
-    .catch((err) => {
-      next(err)
-    })
+User.add({ username, password: hash })
+  .then((newUser) => {
+    
+    res.status(201).json({ id: newUser.id, username: newUser.username , password: newUser.password});
+  })
+  .catch(() => {
+    // Proper error handling
+    next({message:"username taken"});
+  });
 });
 
-router.post('/login', (req, res) => {
-  res.end('implement login, please!');
+router.post('/login', checkUsernameExists, async (req, res, next) => {
+
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -71,12 +79,20 @@ router.post('/login', (req, res) => {
     4- On FAILED login due to `username` not existing in the db, or `password` being incorrect,
       the response body should include a string exactly as follows: "invalid credentials".
   */
+      
+
+      if(bcrypt.compareSync(req.body.password ,req.user.password)) {
+        const token = buildToken(req.user)
+        res.json({message: `welcome, ${req.body.username}`,
+        token,})
+      } else {
+        next({status: 401, message: ' Invalid credentials'})
+      }
 });
 
 function buildToken(user) {
   const payload = {
     subject: user.user_id,
-    role_name: user.role_name,
     username: user.username
   }
   const options = {
