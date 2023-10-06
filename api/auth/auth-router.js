@@ -1,5 +1,8 @@
 const router = require('express').Router();
-const { checkUsernameExists} = require('../middleware/auth-middelware')
+const { 
+  checkUsernameExists,
+  checkfields
+} = require('../middleware/auth-middelware')
 const { SECRET } = require('./secrets/index')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
@@ -54,7 +57,7 @@ User.add({ username, password: hash })
   });
 });
 
-router.post('/login', checkUsernameExists, async (req, res, next) => {
+router.post('/login',checkfields, checkUsernameExists, async (req, res, next) => {
 
   /*
     IMPLEMENT
@@ -79,10 +82,7 @@ router.post('/login', checkUsernameExists, async (req, res, next) => {
     4- On FAILED login due to `username` not existing in the db, or `password` being incorrect,
       the response body should include a string exactly as follows: "invalid credentials".
   */
-      if (!req.body.username || !req.body.password){
-        return res.status(401).json("username and password required");
-    
-      }
+      
 
       if(bcrypt.compareSync(req.body.password ,req.user.password)) {
         const token = buildToken(req.user)
