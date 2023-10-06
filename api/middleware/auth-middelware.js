@@ -13,10 +13,8 @@ const checkUsernameExists =  async (req, res, next) => {
     */
     try {
       const [user] = await findBy({username: req.body.username})
-      if (!req.body.username || !req.body.password){
-        return res.status(401).json("username and password required");
-      
-      } else if(!user) {
+      if(!user) {
+        
         next({status: 401, message: 'invalid credentials'})
       }  else {
 
